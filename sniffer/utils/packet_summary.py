@@ -1,3 +1,4 @@
+import time
 from dataclasses import asdict, dataclass
 
 
@@ -9,6 +10,8 @@ class PacketSummary:
     src_port: int | None = None
     dst_port: int | None = None
     dns_query: str | None = None
+    packet_size: int = 0
+    timestamp: float = 0.0
     raw_summary: str | None = None
 
     def load_from_packet(self, packet):
@@ -16,6 +19,8 @@ class PacketSummary:
         from scapy.layers.inet import ICMP, IP, TCP, UDP
 
         self.raw_summary = packet.summary()
+        self.packet_size = len(packet)
+        self.timestamp = time.time()
 
         if packet.haslayer(IP):
             ip_layer = packet[IP]
@@ -54,9 +59,15 @@ class PacketSummary:
         return asdict(self)
 
     def format_output(self):
+        from datetime import datetime
+        
         source = self.format_endpoint(self.src_ip, self.src_port)
         destination = self.format_endpoint(self.dst_ip, self.dst_port)
-        output = f"{self.protocol:<5} {source} -> {destination}"
+        
+        # Format timestamp as readable local time
+        ts_str = datetime.fromtimestamp(self.timestamp).strftime("%H:%M:%S.%f")[:-3]
+        
+        output = f"[{ts_str}] {self.protocol:<5} {source} -> {destination} ({self.packet_size}B)"
 
         if self.dns_query:
             output = f"{output} | DNS: {self.dns_query}"

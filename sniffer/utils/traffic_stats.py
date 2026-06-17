@@ -1,4 +1,5 @@
-from collections import Counter
+from time import time
+from collections import Counter, deque
 from dataclasses import dataclass, field
 
 
@@ -47,6 +48,10 @@ class TrafficStats:
     udp_packets: int = 0
     dns_packets: int = 0
     icmp_packets: int = 0
+    bytes_transferred: int = 0
+    # recent_packets stores tuples: (protocol, src_ip, dst_ip, packet_size)
+    recent_packets: deque = field(default_factory=lambda: deque(maxlen=20))
+    last_packet_ts: float = 0.0
     source_ips: Counter = field(default_factory=Counter)
     destination_ips: Counter = field(default_factory=Counter)
     ports: Counter = field(default_factory=Counter)
@@ -67,7 +72,13 @@ class TrafficStats:
             self.icmp_packets += 1
 
     def record_packet(self, summary):
-        self.record(summary.protocol)
+        self.record(summary.protocol.upper())
+        self.bytes_transferred += summary.packet_size
+        self.last_packet_ts = time()
+        try:
+            self.recent_packets.appendleft((summary.protocol, summary.src_ip or "", summary.dst_ip or "", summary.packet_size))
+        except Exception:
+            pass
 
         if summary.src_ip:
             self.source_ips[summary.src_ip] += 1
@@ -104,13 +115,21 @@ class TrafficStats:
         }
 
     def format_output(self):
+        if self.bytes_transferred < 1024:
+            bytes_str = f"{self.bytes_transferred}B"
+        elif self.bytes_transferred < 1024 * 1024:
+            bytes_str = f"{self.bytes_transferred / 1024:.1f}KB"
+        else:
+            bytes_str = f"{self.bytes_transferred / (1024 * 1024):.1f}MB"
+
         return (
             "Packets: "
             f"total={self.total_packets} "
             f"TCP={self.tcp_packets} "
             f"UDP={self.udp_packets} "
             f"DNS={self.dns_packets} "
-            f"ICMP={self.icmp_packets}"
+            f"ICMP={self.icmp_packets} "
+            f"| Bytes: {bytes_str}"
         )
 
     def format_distribution_output(self):

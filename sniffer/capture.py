@@ -1,10 +1,7 @@
 from scapy.all import sniff
-
+from datetime import datetime
 from sniffer.utils.packet_summary import PacketSummary
 from sniffer.utils.traffic_stats import TrafficStats
-
-
-traffic_stats = TrafficStats()
 
 
 def build_packet_filter(tcp=False, udp=False, dns=False, ip_value=None, port_value=None):
@@ -40,7 +37,7 @@ def should_include_packet(summary, packet_filter):
     return True
 
 
-def handle_packet(packet, packet_filter):
+def handle_packet(packet, packet_filter, traffic_stats, suppress_stdout=False):
     summary = PacketSummary()
     summary.load_from_packet(packet)
 
@@ -48,10 +45,13 @@ def handle_packet(packet, packet_filter):
         return
 
     traffic_stats.record_packet(summary)
-    print(summary.format_output())
+    if not suppress_stdout:
+        print(summary.format_output())
 
 
-def start_capture(tcp=False, udp=False, dns=False, ip_value=None, port_value=None):
+def start_capture(tcp=False, udp=False, dns=False, ip_value=None, port_value=None, traffic_stats=None, suppress_stdout=False):
+    if traffic_stats is None:
+        traffic_stats = TrafficStats()
     packet_filter = build_packet_filter(
         tcp=tcp,
         udp=udp,
@@ -60,8 +60,10 @@ def start_capture(tcp=False, udp=False, dns=False, ip_value=None, port_value=Non
         port_value=port_value,
     )
 
-    print("Starting packet capture...")
-    sniff(prn=lambda packet: handle_packet(packet, packet_filter), store=False, count=50)
-    print(traffic_stats.format_output())
+    print(f"Starting at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    sniff(
+        prn=lambda packet: handle_packet(packet, packet_filter, traffic_stats, suppress_stdout=suppress_stdout),
+        store=False
+    )
     print(traffic_stats.format_distribution_output())
     print(traffic_stats.format_analytics_output())
