@@ -1,16 +1,14 @@
 from dataclasses import asdict, dataclass
 
-from scapy.layers.dns import DNS, DNSQR
-from scapy.layers.inet import ICMP, IP, TCP, UDP
-
+from sniffer.utils.local_network import is_local_ip
 from sniffer.utils.process_lookup import find_process_by_port
 
 
 @dataclass
 class PacketSummary:
     protocol: str = "OTHER"
-    src_ip: str = "Not Found"
-    dst_ip: str = "Not Found"
+    src_ip: str | None = None
+    dst_ip: str | None = None
     src_port: int | None = None
     dst_port: int | None = None
     src_process: str | None = None
@@ -19,6 +17,9 @@ class PacketSummary:
     raw_summary: str | None = None
 
     def load_from_packet(self, packet):
+        from scapy.layers.dns import DNS, DNSQR
+        from scapy.layers.inet import ICMP, IP, TCP, UDP
+
         self.raw_summary = packet.summary()
 
         if packet.haslayer(IP):
@@ -29,9 +30,13 @@ class PacketSummary:
         if packet.haslayer(DNS):
             self.protocol = "DNS"
 
+            if packet.haslayer(UDP):
+                self.src_port = packet[UDP].sport
+                self.dst_port = packet[UDP].dport
+                
             if packet.haslayer(DNSQR):
                 query_name = packet[DNSQR].qname
-                self.dns_query = query_name.decode().rstrip(".")
+                self.dns_query = query_name.decode(errors="ignore").rstrip(".")
 
         elif packet.haslayer(TCP):
             tcp_layer = packet[TCP]
@@ -48,20 +53,34 @@ class PacketSummary:
         elif packet.haslayer(ICMP):
             self.protocol = "ICMP"
 
-        self.src_process = find_process_by_port(self.src_port, self.protocol)
-        self.dst_process = find_process_by_port(self.dst_port, self.protocol)
+        if is_local_ip(self.src_ip):
+            self.src_process = find_process_by_port(self.src_port, self.protocol)
+
+        if is_local_ip(self.dst_ip):
+            self.dst_process = find_process_by_port(self.dst_port, self.protocol)
 
         return self
 
     def to_dict(self):
-        return (
-            "protocol: \t{protocol}\n"
-            "src_ip: \t{src_ip}\n"
-            "dst_ip: \t{dst_ip}\n"
-            "src_port: \t{src_port}\n"
-            "src_process: \t{src_process}\n"
-            "dst_port: \t{dst_port}\n"
-            "dst_process: \t{dst_process}\n"
-            "dns_query: \t{dns_query}\n"
-            "raw_summary:\t{raw_summary}\n"
-        ).format(**asdict(self))
+        return asdict(self)
+
+    def format_output(self):
+        source = self.format_endpoint(self.src_ip, self.src_port, self.src_process)
+        destination = self.format_endpoint(self.dst_ip, self.dst_port, self.dst_process)
+        output = f"{self.protocol:<5} {source} -> {destination}"
+
+        if self.dns_query:
+            output = f"{output} | DNS: {self.dns_query}"
+
+        return output
+
+    def format_endpoint(self, ip_value, port, process):
+        endpoint = ip_value
+
+        if port:
+            endpoint = f"{endpoint}:{port}"
+
+        if process:
+            endpoint = f"{endpoint} ({process})"
+
+        return endpoint
