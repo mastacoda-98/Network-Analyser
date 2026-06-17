@@ -16,7 +16,7 @@ Quick start
 1. Clone the repo:
 
 ```bash
-git clone https://github.com/youruser/network-analyser.git
+git clone https://github.com/mastacoda-98/Network-Analyser.git
 cd network-analyser
 ```
 
