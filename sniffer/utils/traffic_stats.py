@@ -49,9 +49,10 @@ class TrafficStats:
     dns_packets: int = 0
     icmp_packets: int = 0
     bytes_transferred: int = 0
-    # recent_packets stores tuples: (protocol, src_ip, dst_ip, packet_size)
     recent_packets: deque = field(default_factory=lambda: deque(maxlen=20))
     last_packet_ts: float = 0.0
+    capture_started: bool = False
+    capture_error: str | None = None
     source_ips: Counter = field(default_factory=Counter)
     destination_ips: Counter = field(default_factory=Counter)
     ports: Counter = field(default_factory=Counter)
@@ -71,12 +72,27 @@ class TrafficStats:
         elif protocol == "ICMP":
             self.icmp_packets += 1
 
-    def record_packet(self, summary):
+    def record_packet(self, summary, packet_filter: dict | None = None):
+        if packet_filter:
+            pf = packet_filter
+            if pf.get("tcp") and summary.protocol != "TCP":
+                return
+            if pf.get("udp") and summary.protocol != "UDP":
+                return
+            if pf.get("dns") and summary.protocol != "DNS":
+                return
+            ip_value = pf.get("ip_value")
+            if ip_value and ip_value not in (summary.src_ip, summary.dst_ip):
+                return
+            port_value = pf.get("port_value")
+            if port_value and port_value not in (summary.src_port, summary.dst_port):
+                return
+
         self.record(summary.protocol.upper())
         self.bytes_transferred += summary.packet_size
         self.last_packet_ts = time()
         try:
-            self.recent_packets.appendleft((summary.protocol, summary.src_ip or "", summary.dst_ip or "", summary.packet_size))
+            self.recent_packets.appendleft((summary.protocol, summary.src_ip or "", summary.dst_ip or "", summary.packet_size, summary.src_port, summary.dst_port))
         except Exception:
             pass
 

@@ -17,20 +17,14 @@ def build_parser():
 def main(argv=None):
     parser = build_parser()
     args = parser.parse_args(argv)
-    # If no filter args provided, launch the dashboard
-    no_filters = not (args.tcp or args.udp or args.dns or args.ip_value or args.port_value)
-    if no_filters:
-        dashboard.run_dashboard()
-        return
+    packet_filter = None
+    if args.tcp or args.udp or args.dns or args.ip_value or args.port_value:
+        packet_filter = {
+            "tcp": args.tcp,
+            "udp": args.udp,
+            "dns": args.dns,
+            "ip_value": args.ip_value,
+            "port_value": args.port_value,
+        }
+    dashboard.run_dashboard(packet_filter=packet_filter)
 
-    start_capture(
-        tcp=args.tcp,
-        udp=args.udp,
-        dns=args.dns,
-        ip_value=args.ip_value,
-        port_value=args.port_value,
-    )
-
-
-if __name__ == "__main__":
-    main()

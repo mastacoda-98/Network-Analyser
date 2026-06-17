@@ -5,12 +5,18 @@ description = ""
 authors = ["gurpreet <gurp3773@gmail.com>"]
 readme = "README.md"
 
+packages = [
+    { include = "sniffer" }
+]
+
 [tool.poetry.dependencies]
 python = "^3.12"
 scapy = "^2.7.0"
 rich = "^15.0.0"
 netifaces = "^0.11.0"
 
+[tool.poetry.scripts]
+sniffer = "sniffer.main:main"
 
 [build-system]
 requires = ["poetry-core"]

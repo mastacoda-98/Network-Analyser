@@ -44,7 +44,7 @@ def handle_packet(packet, packet_filter, traffic_stats, suppress_stdout=False):
     if not should_include_packet(summary, packet_filter):
         return
 
-    traffic_stats.record_packet(summary)
+    traffic_stats.record_packet(summary, packet_filter=packet_filter)
     if not suppress_stdout:
         print(summary.format_output())
 
