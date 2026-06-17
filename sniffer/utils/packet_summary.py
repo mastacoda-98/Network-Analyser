@@ -1,8 +1,5 @@
 from dataclasses import asdict, dataclass
 
-from sniffer.utils.local_network import is_local_ip
-from sniffer.utils.process_lookup import find_process_by_port
-
 
 @dataclass
 class PacketSummary:
@@ -11,8 +8,6 @@ class PacketSummary:
     dst_ip: str | None = None
     src_port: int | None = None
     dst_port: int | None = None
-    src_process: str | None = None
-    dst_process: str | None = None
     dns_query: str | None = None
     raw_summary: str | None = None
 
@@ -53,20 +48,14 @@ class PacketSummary:
         elif packet.haslayer(ICMP):
             self.protocol = "ICMP"
 
-        if is_local_ip(self.src_ip):
-            self.src_process = find_process_by_port(self.src_port, self.protocol)
-
-        if is_local_ip(self.dst_ip):
-            self.dst_process = find_process_by_port(self.dst_port, self.protocol)
-
         return self
 
     def to_dict(self):
         return asdict(self)
 
     def format_output(self):
-        source = self.format_endpoint(self.src_ip, self.src_port, self.src_process)
-        destination = self.format_endpoint(self.dst_ip, self.dst_port, self.dst_process)
+        source = self.format_endpoint(self.src_ip, self.src_port)
+        destination = self.format_endpoint(self.dst_ip, self.dst_port)
         output = f"{self.protocol:<5} {source} -> {destination}"
 
         if self.dns_query:
@@ -74,13 +63,10 @@ class PacketSummary:
 
         return output
 
-    def format_endpoint(self, ip_value, port, process):
+    def format_endpoint(self, ip_value, port):
         endpoint = ip_value
 
         if port:
             endpoint = f"{endpoint}:{port}"
-
-        if process:
-            endpoint = f"{endpoint} ({process})"
 
         return endpoint
