@@ -1,72 +1,102 @@
 # Network-Analyser
 
-Getting started — Tech, install & run
+A real-time CLI network packet analyzer built with Python, Scapy, and Rich. Captures live network traffic and provides an interactive terminal dashboard for packet inspection and traffic analytics.
 
-This repository provides a live, Rich-powered CLI network packet analyzer written for Python 3.12 using Scapy for capture and Rich for the terminal dashboard.
+## Features
 
-Tech stack
+- Live packet capture
+- TCP, UDP, DNS, and ICMP parsing
+- Protocol, IP, and port filtering
+- Real-time Rich dashboard
+- Protocol distribution analytics
+- Top destination IPs and ports
+- Recent packet activity feed
+- Throughput monitoring
+
+## Tech Stack
 
 - Python 3.12
-- Scapy (packet capture and parsing)
-- Rich (live terminal dashboard)
-- Poetry (dependency management & CLI entry)
+- Scapy
+- Rich
+- Poetry
 
-Quick start
+## Requirements
 
-1. Clone the repo:
+### Linux / macOS
+
+- Python 3.12+
+- Poetry
+
+### Windows
+
+- Python 3.12+
+- Poetry
+- Npcap
+
+Install Npcap:
+
+https://npcap.com/
+
+## Install Poetry
+
+### Linux / macOS
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+```
+
+### Windows (PowerShell)
+
+```powershell
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | py -
+```
+
+Verify:
+
+```bash
+poetry --version
+```
+
+## Installation
 
 ```bash
 git clone https://github.com/mastacoda-98/Network-Analyser.git
-cd network-analyser
-```
-
-2. Install dependencies with Poetry:
-
-```bash
+cd Network-Analyser
 poetry install
 ```
 
-3. Run the CLI dashboard (recommended):
+## Usage
+
+Linux / macOS:
+
+```bash
+sudo poetry run sniffer
+```
+
+Windows (Administrator terminal):
 
 ```bash
 poetry run sniffer
 ```
 
-Run with filters (examples):
+Examples:
 
 ```bash
-# show only TCP traffic
-poetry run sniffer --tcp
-
-# show only UDP traffic on port 53 (DNS)
-poetry run sniffer --udp --port 53
-
-# filter by IP and port
-poetry run sniffer --ip 192.168.1.10 --port 443
+sudo poetry run sniffer --tcp
+sudo poetry run sniffer --dns
+sudo poetry run sniffer --port 443
+sudo poetry run sniffer --ip 8.8.8.8
+sudo poetry run sniffer --tcp --port 443
 ```
 
-Notes
+## CLI Options
 
-- Capturing packets may require elevated privileges (raw sockets). Use the appropriate elevated command for your OS:
-  - Linux / macOS: `sudo poetry run sniffer` (or `sudo python -m sniffer.main`)
-  - Windows: run the terminal as Administrator and use `poetry run sniffer` (no `sudo` on Windows)
+| Option          | Description           |
+| --------------- | --------------------- |
+| `--tcp`         | Show only TCP packets |
+| `--udp`         | Show only UDP packets |
+| `--dns`         | Show only DNS packets |
+| `--ip <IP>`     | Filter by IP address  |
+| `--port <PORT>` | Filter by port        |
 
-CLI filters and packet parsing
-
-- Protocol filters: `--tcp`, `--udp`, `--dns` — limit captured packets to the selected protocol(s).
-- IP filter: `--ip <IP>` — only include packets where the source or destination matches the IP.
-- Port filter: `--port <PORT>` — only include packets where the source or destination port matches.
-
-Packet parsing
-
-- Packets are parsed using Scapy into a `PacketSummary` dataclass with fields:
-  - `timestamp` — epoch timestamp when the packet was seen
-  - `packet_size` — total packet size in bytes
-  - `protocol` — detected protocol (TCP, UDP, DNS, ICMP, OTHER)
-  - `src_ip`, `dst_ip` — source and destination IPs
-  - `src_port`, `dst_port` — source and destination ports when available
-  - `summary` / `info` — human-readable summary for quick inspection
-
-Traffic aggregation
-
-- The dashboard aggregates counts, bytes transferred, top IPs and ports, protocol distribution, and recent packets in a live-updating Rich layout.
+Press `Ctrl + C` to stop capturing.
