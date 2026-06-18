@@ -51,8 +51,6 @@ class TrafficStats:
     bytes_transferred: int = 0
     recent_packets: deque = field(default_factory=lambda: deque(maxlen=20))
     last_packet_ts: float = 0.0
-    capture_started: bool = False
-    capture_error: str | None = None
     source_ips: Counter = field(default_factory=Counter)
     destination_ips: Counter = field(default_factory=Counter)
     ports: Counter = field(default_factory=Counter)
